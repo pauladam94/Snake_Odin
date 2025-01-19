@@ -123,6 +123,8 @@ automata_init :: proc(
 ) -> (
 	a: Automata,
 ) {
+	id := new_entity()
+
 	for t in transition {
 		append(&a.transition, t)
 	}

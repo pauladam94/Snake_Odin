@@ -6,7 +6,9 @@ import "core:fmt"
 void :: struct {}
 ComponentTypeSet :: map[ComponentType]void
 
-HealthComponent :: struct {}
+HealthComponent :: struct {
+	health: f32,
+}
 BossComponent :: struct {}
 PlayerComponent :: struct {}
 ConnectionComponent :: struct {
@@ -57,5 +59,3 @@ component_type :: proc(component_union: ComponentUnion) -> ComponentType {
 		return nil
 	}
 }
-
-physics_system :: proc() {}

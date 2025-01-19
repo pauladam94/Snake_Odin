@@ -14,7 +14,7 @@ DIR :: enum {
 main :: proc() {
 	width :: 1000
 	height :: 1000
-	size :: 10
+	size :: 40
 
 	rl.InitWindow(width, height, "Hello")
 

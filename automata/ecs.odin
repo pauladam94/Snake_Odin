@@ -5,7 +5,7 @@ EntityHandle :: int
 ECS :: struct {
 	connections:         [dynamic]ConnectionComponent,
 	nodes:               [dynamic]NodeComponent,
-	posisionts:          [dynamic]PositionComponent,
+	positions:           [dynamic]PositionComponent,
 	circles:             [dynamic]CircleComponent,
 	// All entities
 	entities:            [dynamic]EntityHandle,
@@ -31,6 +31,25 @@ new_id :: proc(using ecs: ECS) -> EntityHandle {
 	return len(entities)
 }
 
-new_entity :: proc(components: []ComponentType) {
-	id := new_id(ecs)
+new_entity :: proc() -> (id: EntityHandle) {
+	id = new_id(ecs)
+	append(&ecs.entities, id)
+	append(&ecs.entities_components, nil)
+	return
+}
+
+entity_add_component :: proc(entity: EntityHandle, component: ComponentUnion) {
+
+}
+
+entity_set_component :: proc(entity: EntityHandle, component: ComponentUnion) {
+}
+
+delete_ecs :: proc() {
+	using ecs
+	delete_dynamic_array(connections)
+	delete_dynamic_array(nodes)
+	delete_dynamic_array(positions)
+	delete_dynamic_array(entities)
+	delete_dynamic_array(entities_components)
 }
