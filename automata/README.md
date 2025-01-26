@@ -1,7 +1,3 @@
-
-
-
-
 # GamAutomata
 
 Plusieurs niveaux

@@ -2,6 +2,8 @@ package main
 
 import "core:fmt"
 import "core:time"
+import "core:math"
+
 import rl "vendor:raylib"
 
 DIR :: enum {

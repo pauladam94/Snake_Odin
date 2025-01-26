@@ -1,19 +1,27 @@
 package main
 
+import "core:fmt"
+import "core:reflect"
+
 EntityHandle :: int
 
+Components :: struct {
+	connections: [dynamic]Maybe(ConnectionComponent),
+	nodes:       [dynamic]Maybe(NodeComponent),
+	positions:   [dynamic]Maybe(PositionComponent),
+	circles:     [dynamic]Maybe(CircleComponent),
+	healths:     [dynamic]Maybe(HealthComponent),
+	players:     [dynamic]Maybe(PlayerComponent),
+	bounds:      [dynamic]Maybe(BoundComponent),
+}
 ECS :: struct {
-	connections:         [dynamic]ConnectionComponent,
-	nodes:               [dynamic]NodeComponent,
-	positions:           [dynamic]PositionComponent,
-	circles:             [dynamic]CircleComponent,
+	using components: Components,
 	// All entities
-	entities:            [dynamic]EntityHandle,
-	// Which entites have which component
-	entities_components: [dynamic]ComponentTypeSet,
+	entities:         [dynamic]EntityHandle,
 }
 
-new_id :: proc(using ecs: ECS) -> EntityHandle {
+new_id :: proc() -> EntityHandle {
+	using ecs
 	present: [dynamic]bool
 	defer delete(present)
 
@@ -28,21 +36,31 @@ new_id :: proc(using ecs: ECS) -> EntityHandle {
 			return i
 		}
 	}
+
+	append(&connections, nil)
+	append(&nodes, nil)
+	append(&positions, nil)
+	append(&circles, nil)
+	append(&healths, nil)
+	append(&players, nil)
+	append(&bounds, nil)
 	return len(entities)
 }
 
 new_entity :: proc() -> (id: EntityHandle) {
-	id = new_id(ecs)
+	id = new_id()
+	fmt.println("new id: ", id)
 	append(&ecs.entities, id)
-	append(&ecs.entities_components, nil)
 	return
 }
 
-entity_add_component :: proc(entity: EntityHandle, component: ComponentUnion) {
-
-}
-
-entity_set_component :: proc(entity: EntityHandle, component: ComponentUnion) {
+set_component :: proc {
+	set_connection_component,
+	set_node_component,
+	set_position_component,
+	set_circle_component,
+	set_player_component,
+	set_bound_component,
 }
 
 delete_ecs :: proc() {
@@ -51,5 +69,4 @@ delete_ecs :: proc() {
 	delete_dynamic_array(nodes)
 	delete_dynamic_array(positions)
 	delete_dynamic_array(entities)
-	delete_dynamic_array(entities_components)
 }
