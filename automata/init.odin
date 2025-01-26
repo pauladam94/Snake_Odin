@@ -9,12 +9,9 @@ init_game :: proc() {
 
 	rl.InitWindow(width, height, "Hello")
 	// font = rl.LoadFontEx("./assets/FiraCode-Retina.ttf", font_size, nil, 256)
-	font = rl.LoadFont("")
+	font = rl.LoadFont("") // Load the default raylib font
 	rl.SetConfigFlags(rl.ConfigFlags{rl.ConfigFlag.MSAA_4X_HINT})
-
-
+	
 	camera_init()
-
-
-
+	camera.zoom = 1
 }

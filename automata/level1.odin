@@ -2,7 +2,7 @@ package main
 
 import "core:fmt"
 
-load_level1 :: proc() {
+load_level2 :: proc() {
 
 	r: f32 = 40.
 	space: f32 = 400.

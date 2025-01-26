@@ -2,8 +2,8 @@ package main
 
 import "core:fmt"
 
-load_level2 :: proc() {
-
+load_level0 :: proc() {
+	level_id := 0
 	r: f32 = 40.
 	space: f32 = 400.
 
@@ -23,7 +23,7 @@ load_level2 :: proc() {
 				0,
 			},
 		)
-		set_component(handle, BoundComponent{{0, 0}, {1000, 1000}})
+		set_component(handle, levels_bound[level_id])
 		set_component(handle, CircleComponent{r})
 	}
 

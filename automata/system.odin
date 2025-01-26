@@ -13,9 +13,9 @@ system_update :: proc() {
 		connection, has_connection := connections[id].?
 		player, has_player := players[id].?
 		bound, has_bound := bounds[id].?
-		
+
 		if has_position {
-			position_update(pos)
+			// position_update(pos)
 		}
 
 		if has_player {

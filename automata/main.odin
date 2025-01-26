@@ -85,7 +85,7 @@ main :: proc() {
 		mem.tracking_allocator_destroy(&track)
 	}
 
-	load_level1()
+	load_level0()
 
 	init_game()
 
@@ -98,6 +98,7 @@ main :: proc() {
 
 		rl.ClearBackground(rl.WHITE)
 		system_draw()
+		levels_draw_bound()
 
 		rl.EndMode2D()
 		rl.EndDrawing()
