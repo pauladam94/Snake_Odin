@@ -13,22 +13,32 @@ system_update :: proc() {
 		connection, has_connection := connections[id].?
 		player, has_player := players[id].?
 		bound, has_bound := bounds[id].?
+		boss, has_boss := bosses[id].?
 
 		if has_position {
-			// position_update(pos)
+			position_update(pos)
 		}
-
-		if has_player {
-			switch {
-			case rl.IsKeyPressed(.A):
-				st, ok := next_state(connections[player.at].?, "a")
-				set_component(id, st)
-			case rl.IsKeyPressed(.B):
-				st, ok := next_state(connections[player.at].?, "b")
-				set_component(id, st)
-			case rl.IsKeyPressed(.C):
-				st, ok := next_state(connections[player.at].?, "c")
-				set_component(id, st)
+		if has_boss && has_position {
+			pos.end = positions[boss.at].?
+		}
+		if has_player && has_position {
+			pos.end = positions[player.at].?
+			if !pos.in_transition {
+				for key in all_keys {
+					if rl.IsKeyPressed(key) {
+						st, ok := next_state(
+							connections[player.at].?,
+							keymap[key],
+						)
+						if ok {
+							set_component(id, st)
+							pos.in_transition = true
+							pos.transition = 0
+							pos.begin = pos.pos
+							pos.end = positions[st.at].?
+						}
+					}
+				}
 			}
 		}
 
@@ -44,6 +54,7 @@ system_update :: proc() {
 			p.x -= 2 * delta
 			w1 = nodes_weight(id)
 			p.x += delta
+			// if w0 == NaN or w1 == NaN {} // Fix error with that
 			grad = (w0 - w1) / (2 * delta)
 			p.x -= grad * epsilon
 
@@ -54,6 +65,8 @@ system_update :: proc() {
 			p.y += delta
 			grad = (w0 - w1) / (2 * delta)
 			p.y -= grad * epsilon
+
+			pos.end = p.pos
 		}
 
 		if has_position && has_bound && has_circle {
@@ -74,7 +87,31 @@ system_draw :: proc() {
 		pos, has_position := positions[id].?
 		connection, has_connection := connections[id].?
 		player, has_player := players[id].?
+		boss, has_boss := bosses[id].?
+		bound, has_bound := bounds[id].?
+		health, has_health := healths[id].?
 
+		if has_health && has_position {
+			rl.DrawRectangleLinesEx(
+				rl.Rectangle {
+					pos.x - health_bar_width / 2,
+					pos.y + 30,
+					health_bar_width,
+					10,
+				},
+				2.,
+				rl.BLACK,
+			)
+			rl.DrawRectangleRec(
+				rl.Rectangle {
+					pos.x - health_bar_width / 2,
+					pos.y + 30,
+					health_bar_width * health.value / health.max,
+					10,
+				},
+				rl.BLACK,
+			)
+		}
 		if has_circle && has_node && has_position {
 			draw_circle(circle, pos)
 		}
@@ -92,18 +129,31 @@ system_draw :: proc() {
 				)
 			}
 		}
-		if has_player {
-			pos2 := positions[player.at].?
+		if has_boss && has_position {
 			rl.DrawTriangle(
-				pos2.pos + {10, 0},
-				pos2.pos + {-10, -10},
-				pos2.pos + {-10, 10},
+				pos.pos + {+20, +00},
+				pos.pos + {-10, -15},
+				pos.pos + {-10, 15},
 				rl.RED,
+			)
+			rl.DrawTriangle(
+				pos.pos + {-20, +00},
+				pos.pos + {+10, +15},
+				pos.pos + {+10, -15},
+				rl.RED,
+			)
+		}
+		if has_player && has_position {
+			rl.DrawTriangle(
+				pos.pos + {10, 0},
+				pos.pos + {-10, -10},
+				pos.pos + {-10, 10},
+				rl.BLUE,
 			)
 		}
 	}
 }
 
 draw_circle :: proc(circle: CircleComponent, pos: PositionComponent) {
-	rl.DrawCircleV(pos, circle.radius, rl.GREEN)
+	rl.DrawCircleLinesV(pos, circle.radius, rl.GREEN)
 }

@@ -4,9 +4,12 @@ import "core:fmt"
 import "core:math"
 
 HealthComponent :: struct {
-	health: f32,
+	value: f32,
+	max:   f32,
 }
-BossComponent :: struct {}
+BossComponent :: struct {
+	at: EntityHandle,
+}
 PlayerComponent :: struct {
 	at: EntityHandle,
 }
@@ -20,16 +23,24 @@ CircleComponent :: struct {
 	radius: f32,
 }
 PositionComponent :: struct {
-	using pos:  Vec2,
-	begin:      Vec2,
-	end:        Vec2,
-	transition: f32,
+	using pos:     Vec2,
+	begin:         Vec2,
+	end:           Vec2,
+	transition:    f32,
+	in_transition: bool,
 }
 BoundComponent :: struct {
 	min: Vec2,
 	max: Vec2,
 }
 
+append_connection :: proc(entity: EntityHandle, connection: Connection) {
+	if connections, ok := &ecs.connections[entity].?; ok {
+		append(connections, connection)
+	} else {
+		set_connection_component(entity, {connection})
+	}
+}
 // Set
 set_connection_component :: proc(
 	entity: EntityHandle,
@@ -61,6 +72,15 @@ set_player_component :: proc(
 set_bound_component :: proc(entity: EntityHandle, component: BoundComponent) {
 	assign_at(&ecs.bounds, entity, component)
 }
+set_boss_component :: proc(entity: EntityHandle, component: BossComponent) {
+	assign_at(&ecs.bosses, entity, component)
+}
+set_health_component :: proc(
+	entity: EntityHandle,
+	component: HealthComponent,
+) {
+	assign_at(&ecs.healths, entity, component)
+}
 
 // Operation on Component
 next_state :: proc(
@@ -68,16 +88,16 @@ next_state :: proc(
 	letter: string,
 ) -> (
 	player: PlayerComponent,
-	err: bool,
+	ok: bool,
 ) {
 	for con in connection {
 		if con.letter == letter {
 			player = PlayerComponent{con.link_to}
-			err = true
+			ok = true
 			return
 		}
 	}
-	err = false
+	ok = false
 	return
 }
 
@@ -87,10 +107,12 @@ nodes_weight :: proc(entity: EntityHandle) -> (weight: f32) {
 	k: f32 = 10
 	mu: f32 = math.pow(k, 6)
 	// All connections from entity
-	for t in connections[entity].? {
-		begin := positions[entity].?
-		end := positions[t.link_to].?
-		weight += k * math.abs(length(end.pos - begin.pos) - l0)
+	if connections_entity, ok := connections[entity].?; ok {
+		for t in connections_entity {
+			begin := positions[entity].?
+			end := positions[t.link_to].?
+			weight += k * math.abs(length(end.pos - begin.pos) - l0)
+		}
 	}
 	// All connection to entity
 	for connection, id in connections {
@@ -105,9 +127,13 @@ nodes_weight :: proc(entity: EntityHandle) -> (weight: f32) {
 		}
 	}
 	for p1_maybe, id1 in positions {
-		if p1, ok := p1_maybe.?; ok {
+		p1, is_pos := p1_maybe.?
+		_, ok_node1 := nodes[id1].?
+		if is_pos && ok_node1 {
 			for p2_maybe, id2 in positions {
-				if p2, ok := p2_maybe.?; ok && id1 != id2 {
+				p2, is_pos := p2_maybe.?
+				_, ok_node2 := nodes[id2].?
+				if is_pos && ok_node2 && p1 != p2 && id1 != id2 {
 					weight += mu / length(p1.pos - p2.pos)
 				}
 			}
@@ -115,10 +141,4 @@ nodes_weight :: proc(entity: EntityHandle) -> (weight: f32) {
 	}
 
 	return
-}
-
-position_update :: proc(pos: ^PositionComponent) {
-	pos.transition += 0.05
-	t := pos.transition
-	pos.pos = pos.begin * (1 - t) + pos.end * t
 }

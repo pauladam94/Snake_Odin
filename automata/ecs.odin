@@ -12,6 +12,7 @@ Components :: struct {
 	circles:     [dynamic]Maybe(CircleComponent),
 	healths:     [dynamic]Maybe(HealthComponent),
 	players:     [dynamic]Maybe(PlayerComponent),
+	bosses:      [dynamic]Maybe(BossComponent),
 	bounds:      [dynamic]Maybe(BoundComponent),
 }
 ECS :: struct {
@@ -44,12 +45,12 @@ new_id :: proc() -> EntityHandle {
 	append(&healths, nil)
 	append(&players, nil)
 	append(&bounds, nil)
+	append(&bosses, nil)
 	return len(entities)
 }
 
 new_entity :: proc() -> (id: EntityHandle) {
 	id = new_id()
-	fmt.println("new id: ", id)
 	append(&ecs.entities, id)
 	return
 }
@@ -61,12 +62,24 @@ set_component :: proc {
 	set_circle_component,
 	set_player_component,
 	set_bound_component,
+	set_boss_component,
+	set_health_component,
 }
 
 delete_ecs :: proc() {
 	using ecs
-	delete_dynamic_array(connections)
-	delete_dynamic_array(nodes)
-	delete_dynamic_array(positions)
-	delete_dynamic_array(entities)
+	for maybe_con in connections {
+		if c, ok := maybe_con.?; ok {
+			delete(c)
+		}
+	}
+	delete(connections)
+	delete(nodes)
+	delete(positions)
+	delete(entities)
+	delete(bounds)
+	delete(circles)
+	delete(players)
+	delete(healths)
+	delete(bosses)
 }

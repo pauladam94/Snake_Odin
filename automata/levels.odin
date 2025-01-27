@@ -4,15 +4,16 @@ import rl "vendor:raylib"
 
 levels_draw_bound :: proc() {
 	a := rl.Rectangle{}
+	thickness: f32 = 10
 	for bound in levels_bound {
 		rl.DrawRectangleLinesEx(
 			rl.Rectangle {
-				bound.min.x,
-				bound.min.y,
-				bound.max.x - bound.min.x,
-				bound.max.y - bound.min.y,
+				bound.min.x - thickness,
+				bound.min.y - thickness,
+				bound.max.x - bound.min.x + thickness * 2,
+				bound.max.y - bound.min.y + thickness * 2,
 			},
-			10,
+			thickness,
 			rl.BLACK,
 		)
 	}

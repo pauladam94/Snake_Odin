@@ -85,20 +85,36 @@ main :: proc() {
 		mem.tracking_allocator_destroy(&track)
 	}
 
-	load_level0()
+	defer delete_ecs()
+
+	// INITIAL NODE
+	begin_node := new_entity()
+	set_component(begin_node, NodeComponent{})
+	set_component(begin_node, position({0, 0}))
+	set_component(begin_node, CircleComponent{50})
+	fmt.println("begin node:", begin_node)
+
+	// PLAYER
+	player := new_entity()
+	set_component(player, PlayerComponent{begin_node})
+	set_component(player, HealthComponent{90, 100})
+	set_component(player, position(ecs.positions[begin_node].?))
+
+	out: []EntityHandle = load_level_0(begin_node)
+	load_level_1(out[0])
 
 	init_game()
 
+
 	for !rl.WindowShouldClose() {
 		dt = rl.GetFrameTime()
-
 
 		rl.BeginDrawing()
 		rl.BeginMode2D(camera)
 
 		rl.ClearBackground(rl.WHITE)
-		system_draw()
 		levels_draw_bound()
+		system_draw()
 
 		rl.EndMode2D()
 		rl.EndDrawing()

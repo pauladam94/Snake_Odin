@@ -28,7 +28,7 @@ Condition :
 	Alors l'une des deux diverge.
 */
 mandelbrot :: proc(c: complex128, n: i32) -> bool {
-	v: complex128
+	v: complex128 = 0
 	for i in 0 ..= n {
 		if real(v) + imag(v) >= 4 {return false}
 		v = v * v + c

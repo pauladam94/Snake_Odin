@@ -2,10 +2,8 @@ package main
 
 import "core:fmt"
 
-load_level2 :: proc() {
-
-	r: f32 = 40.
-	space: f32 = 400.
+load_level_1 :: proc(node_entry: EntityHandle) {
+	level_id := 1
 
 	ids: [dynamic]EntityHandle
 	defer delete(ids)
@@ -14,25 +12,33 @@ load_level2 :: proc() {
 		handle := new_entity()
 		append(&ids, handle)
 		set_component(handle, NodeComponent{})
+
 		set_component(
 			handle,
-			PositionComponent {
-				{f32(i % 2) * space + r, f32(i / 2) * space + r},
-				{0, 0},
-				{0, 0},
-				0,
-			},
+			position(
+				{
+					f32(i % 2) * spacing_base + radius_base,
+					f32(i / 2) * spacing_base + radius_base,
+				} +
+				levels_bound[level_id].min,
+			),
 		)
-		set_component(handle, BoundComponent{{0, 0}, {1000, 1000}})
-		set_component(handle, CircleComponent{r})
+		set_component(handle, levels_bound[level_id])
+		set_component(handle, CircleComponent{radius_base})
 	}
 
-	set_component(ids[0], ConnectionComponent{{"a", ids[1]}})
-	set_component(ids[1], ConnectionComponent{{"a", ids[2]}, {"b", ids[4]}})
-	set_component(ids[2], ConnectionComponent{{"a", ids[3]}, {"b", ids[1]}})
-	set_component(ids[3], ConnectionComponent{{"a", ids[1]}})
-	set_component(ids[4], ConnectionComponent{{"b", ids[1]}})
+	append_connection(node_entry, {"e", ids[0]})
 
-	player := new_entity()
-	set_component(player, PlayerComponent{ids[0]})
+	append_connection(ids[0], {"a", ids[1]})
+	append_connection(ids[1], {"a", ids[2]})
+	append_connection(ids[1], {"b", ids[4]})
+	append_connection(ids[2], {"a", ids[3]})
+	append_connection(ids[2], {"b", ids[1]})
+	append_connection(ids[3], {"a", ids[1]})
+	append_connection(ids[4], {"b", ids[1]})
+
+
+	fmt.printf("Loading level {} DONE\n", level_id)
+	// player := new_entity()
+	// set_component(player, PlayerComponent{ids[0]})
 }
