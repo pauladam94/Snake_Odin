@@ -4,8 +4,7 @@ import "core:fmt"
 import rl "vendor:raylib"
 
 init_game :: proc() {
-	fmt.println("\nFont loaded with success")
-	rl.SetTargetFPS(60)
+	// rl.SetTargetFPS(target_fps)
 
 	rl.InitWindow(width, height, "Hello")
 	// font = rl.LoadFontEx("./assets/FiraCode-Retina.ttf", font_size, nil, 256)
@@ -13,5 +12,4 @@ init_game :: proc() {
 	rl.SetConfigFlags(rl.ConfigFlags{rl.ConfigFlag.MSAA_4X_HINT})
 	
 	camera_init()
-	camera.zoom = 1
 }

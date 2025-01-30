@@ -2,14 +2,20 @@ package main
 
 import "core:fmt"
 import "core:math"
+import rl "vendor:raylib"
 
+// Health bar of a given entity
 HealthComponent :: struct {
 	value: f32,
 	max:   f32,
 }
+// Entity that are linked to another entity (position)
+FixedAtComponent :: struct {}
+// Entity that is a boss
 BossComponent :: struct {
 	at: EntityHandle,
 }
+// Entity that is a player
 PlayerComponent :: struct {
 	at: EntityHandle,
 }
@@ -18,68 +24,42 @@ Connection :: struct {
 	letter:  string,
 	link_to: EntityHandle,
 }
+// Try
+NewConnectionComponent :: struct {
+	begin:  EntityHandle,
+	letter: string,
+	end:    EntityHandle,
+}
+ShakerComponent :: struct {
+	timer: EntityHandle,
+}
 NodeComponent :: struct {}
-CircleComponent :: struct {
-	radius: f32,
+ColorFillComponent :: rl.Color
+RadiusComponent :: f32
+PositionComponent :: Vec2
+HoverComponent :: struct {}
+TransitionComponent :: struct {
+	begin: EntityHandle,
+	end:   EntityHandle,
+	timer: EntityHandle,
 }
-PositionComponent :: struct {
-	using pos:     Vec2,
-	begin:         Vec2,
-	end:           Vec2,
-	transition:    f32,
-	in_transition: bool,
+TimerComponent :: struct {
+	t:        f32, // between 0 and 1
+	duration: f32,
 }
+ParticleComponent :: struct {}
 BoundComponent :: struct {
 	min: Vec2,
 	max: Vec2,
 }
 
-append_connection :: proc(entity: EntityHandle, connection: Connection) {
-	if connections, ok := &ecs.connections[entity].?; ok {
-		append(connections, connection)
+append_connection :: proc(id: EntityHandle, connection: Connection) {
+	using ecs
+	if id in connections {
+		append(&connections[id], connection)
 	} else {
-		set_connection_component(entity, {connection})
+		connections[id] = {connection}
 	}
-}
-// Set
-set_connection_component :: proc(
-	entity: EntityHandle,
-	component: ConnectionComponent,
-) {
-	assign_at(&ecs.connections, entity, component)
-}
-set_node_component :: proc(entity: EntityHandle, component: NodeComponent) {
-	assign_at(&ecs.nodes, entity, component)
-}
-set_position_component :: proc(
-	entity: EntityHandle,
-	component: PositionComponent,
-) {
-	assign_at(&ecs.positions, entity, component)
-}
-set_circle_component :: proc(
-	entity: EntityHandle,
-	component: CircleComponent,
-) {
-	assign_at(&ecs.circles, entity, component)
-}
-set_player_component :: proc(
-	entity: EntityHandle,
-	component: PlayerComponent,
-) {
-	assign_at(&ecs.players, entity, component)
-}
-set_bound_component :: proc(entity: EntityHandle, component: BoundComponent) {
-	assign_at(&ecs.bounds, entity, component)
-}
-set_boss_component :: proc(entity: EntityHandle, component: BossComponent) {
-	assign_at(&ecs.bosses, entity, component)
-}
-set_health_component :: proc(
-	entity: EntityHandle,
-	component: HealthComponent,
-) {
-	assign_at(&ecs.healths, entity, component)
 }
 
 // Operation on Component
@@ -87,12 +67,12 @@ next_state :: proc(
 	connection: ConnectionComponent,
 	letter: string,
 ) -> (
-	player: PlayerComponent,
+	player: EntityHandle,
 	ok: bool,
 ) {
 	for con in connection {
 		if con.letter == letter {
-			player = PlayerComponent{con.link_to}
+			player = con.link_to
 			ok = true
 			return
 		}
@@ -101,40 +81,38 @@ next_state :: proc(
 	return
 }
 
+spring_force :: proc(l, l0, k: f32) -> f32 {
+	return k * math.abs(l - l0)
+}
+
 nodes_weight :: proc(entity: EntityHandle) -> (weight: f32) {
 	using ecs
 	l0: f32 = 300
 	k: f32 = 10
 	mu: f32 = math.pow(k, 6)
 	// All connections from entity
-	if connections_entity, ok := connections[entity].?; ok {
+	if connections_entity, ok := connections[entity]; ok {
 		for t in connections_entity {
-			begin := positions[entity].?
-			end := positions[t.link_to].?
-			weight += k * math.abs(length(end.pos - begin.pos) - l0)
+			begin := positions[entity]
+			end := positions[t.link_to]
+			weight += spring_force(l = length(end - begin), l0 = l0, k = k)
 		}
 	}
 	// All connection to entity
-	for connection, id in connections {
-		if con, ok := connection.?; ok {
-			for connect in con {
-				if connect.link_to == entity {
-					begin := positions[id].?
-					end := positions[entity].?
-					weight += k * math.abs(length(end.pos - begin.pos) - l0)
-				}
+	for id, connections_id in connections {
+		for t in connections_id {
+			if t.link_to == entity {
+				begin := positions[id]
+				end := positions[entity]
+				weight += spring_force(l = length(end - begin), l0 = l0, k = k)
 			}
 		}
 	}
-	for p1_maybe, id1 in positions {
-		p1, is_pos := p1_maybe.?
-		_, ok_node1 := nodes[id1].?
-		if is_pos && ok_node1 {
-			for p2_maybe, id2 in positions {
-				p2, is_pos := p2_maybe.?
-				_, ok_node2 := nodes[id2].?
-				if is_pos && ok_node2 && p1 != p2 && id1 != id2 {
-					weight += mu / length(p1.pos - p2.pos)
+	for id1, p1 in positions {
+		if id1 in nodes {
+			for id2, p2 in positions {
+				if id2 in nodes && p1 != p2 && id1 != id2 {
+					weight += mu / length(p1 - p2)
 				}
 			}
 		}

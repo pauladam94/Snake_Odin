@@ -1,101 +1,189 @@
 package main
 
 import "core:fmt"
+import "core:math/rand"
 import rl "vendor:raylib"
 
 system_update :: proc() {
+	// fmt.println("entities:", ecs.entities)
 	using ecs
 
-	for id in entities {
-		node, has_node := nodes[id].?
-		circle, has_circle := circles[id].?
-		pos, has_position := &positions[id].?
-		connection, has_connection := connections[id].?
-		player, has_player := players[id].?
-		bound, has_bound := bounds[id].?
-		boss, has_boss := bosses[id].?
+	if rl.IsKeyPressed(.L) {
+		for id in bounds {
+			if bounds[id].min == levels_bound[0].min {
+				bounds[id] = BoundComponent{{0, 0}, {3000, 3000}}
+			}
+		}
+		levels_bound[0] = BoundComponent{{0, 0}, {3000, 3000}}
+	}
 
-		if has_position {
-			position_update(pos)
+	for id in entities {
+		// Delete entity with health less that 0
+		if id in healths {
+			if healths[id].value <= 0 {
+				delete_entity(id)
+			}
 		}
-		if has_boss && has_position {
-			pos.end = positions[boss.at].?
+
+		// Particule with no more transition should be deleted
+		if id in particules && id not_in transitions do delete_entity(id)
+
+		// Transition with no more timer should be deleted
+		if id in transitions && transitions[id].timer not_in timers {
+			// End of timer for a particule
+			if id in particules {
+				t := transitions[id]
+				if t.end in healths {
+					health := &healths[t.end]
+					health.value -= 10
+				}
+			}
+			delete_key(&transitions, id)
 		}
-		if has_player && has_position {
-			pos.end = positions[player.at].?
-			if !pos.in_transition {
-				for key in all_keys {
-					if rl.IsKeyPressed(key) {
-						st, ok := next_state(
-							connections[player.at].?,
-							keymap[key],
-						)
-						if ok {
-							set_component(id, st)
-							pos.in_transition = true
-							pos.transition = 0
-							pos.begin = pos.pos
-							pos.end = positions[st.at].?
+		// Update all timers
+		if id in timers do timer_update(id)
+
+		if id in transitions &&
+		   id in positions &&
+		   transitions[id].timer in timers {
+			transition := transitions[id]
+			t := timers[transition.timer].t
+			pos := &positions[id]
+			pos^ =
+				positions[transition.begin] * (1 - t) +
+				positions[transition.end] * t
+		}
+		if id in bosses && id in positions && id not_in transitions {
+			positions[id] = positions[bosses[id].at]
+		}
+		if id in players && id in positions && id not_in transitions {
+			positions[id] = positions[players[id].at]
+		}
+		if id in players && id in positions && id not_in transitions {
+			pos := &positions[id]
+			for key in all_keys {
+				if rl.IsKeyPressed(key) {
+					current_node := players[id].at
+					next_node, ok := next_state(
+						connections[current_node],
+						keymap[key],
+					)
+					if ok {
+						players[id] = PlayerComponent{next_node}
+
+						transi_timer := new_entity()
+						transitions[id] = TransitionComponent {
+							begin = current_node,
+							end   = next_node,
+							timer = transi_timer,
+						}
+						timers[transi_timer] = TimerComponent {
+							t        = 0,
+							duration = 1,
+						}
+
+						// Launch particule to all bosses
+						for id_boss in bosses {
+							particule_id := new_entity()
+							particules[particule_id] = ParticleComponent{}
+							colors[particule_id] = rl.RED
+							radiuses[particule_id] = 10
+							positions[particule_id] = PositionComponent{}
+
+							particule_timer := new_entity()
+							timers[particule_timer] = TimerComponent {
+								duration = 0.5,
+							}
+							transitions[particule_id] = TransitionComponent {
+								begin = current_node,
+								end   = id_boss,
+								timer = particule_timer,
+							}
+						}
+						// don't look at other inputs
+						break
+					} else {
+						shaker_timer := new_entity()
+						timers[shaker_timer] = TimerComponent {
+							duration = 1,
+						}
+						shakers[players[id].at] = ShakerComponent {
+							timer = shaker_timer,
 						}
 					}
 				}
 			}
 		}
 
-		if has_node && has_position && has_circle {
+		if id in nodes && id in positions && id in radiuses {
+			pos := &positions[id]
+			r := radiuses[id]
+
 			delta: f32 = 0.2
-			epsilon: f32 = 0.1
+			epsilon: f32 = 10 * dt // 0.1
 			w0, w1: f32 = 0, 0
 			grad: f32 = 0
-			p := pos
-			r := circle.radius
-			p.x += delta
+			pos.x += delta
 			w0 = nodes_weight(id)
-			p.x -= 2 * delta
+			pos.x -= 2 * delta
 			w1 = nodes_weight(id)
-			p.x += delta
+			pos.x += delta
 			// if w0 == NaN or w1 == NaN {} // Fix error with that
 			grad = (w0 - w1) / (2 * delta)
-			p.x -= grad * epsilon
+			pos.x -= grad * epsilon
 
-			p.y += delta
+			pos.y += delta
 			w0 = nodes_weight(id)
-			p.y -= 2 * delta
+			pos.y -= 2 * delta
 			w1 = nodes_weight(id)
-			p.y += delta
+			pos.y += delta
 			grad = (w0 - w1) / (2 * delta)
-			p.y -= grad * epsilon
-
-			pos.end = p.pos
+			pos.y -= grad * epsilon
 		}
 
-		if has_position && has_bound && has_circle {
-			r := circle.radius
+		if id in positions && id in bounds && id in radiuses {
+			r := radiuses[id]
+			pos := &positions[id]
+			bound := bounds[id]
 			if pos.x <= bound.min.x + r do pos.x = bound.min.x + r
 			if pos.y <= bound.min.y + r do pos.y = bound.min.y + r
 			if pos.x >= bound.max.x - r do pos.x = bound.max.x - r
 			if pos.y >= bound.max.y - r do pos.y = bound.max.y - r
-			set_component(id, pos^)
+			positions[id] = pos^
+		}
+
+		if id in positions && id in shakers {
+			positions[id] += {
+				rand.float32_range(-3, 3),
+				rand.float32_range(-3, 3),
+			}
+		}
+
+		if id in shakers && shakers[id].timer not_in timers {
+			delete_key(&shakers, id)
+		}
+
+		// Check for hover of an element 
+		if id in radiuses && id in positions {
+			if length(rl.GetMousePosition() - positions[id]) < radiuses[id] {
+				hovers[id] = HoverComponent{}
+			} else {
+				delete_key(&hovers, id)
+			}
 		}
 	}
 }
 system_draw :: proc() {
 	using ecs
 	for id in entities {
-		node, has_node := nodes[id].?
-		circle, has_circle := circles[id].?
-		pos, has_position := positions[id].?
-		connection, has_connection := connections[id].?
-		player, has_player := players[id].?
-		boss, has_boss := bosses[id].?
-		bound, has_bound := bounds[id].?
-		health, has_health := healths[id].?
 
-		if has_health && has_position {
+		if id in healths && id in positions {
+			pos := positions[id]
+			health := healths[id]
 			rl.DrawRectangleLinesEx(
 				rl.Rectangle {
 					pos.x - health_bar_width / 2,
-					pos.y + 30,
+					pos.y + 40,
 					health_bar_width,
 					10,
 				},
@@ -105,55 +193,58 @@ system_draw :: proc() {
 			rl.DrawRectangleRec(
 				rl.Rectangle {
 					pos.x - health_bar_width / 2,
-					pos.y + 30,
+					pos.y + 40,
 					health_bar_width * health.value / health.max,
 					10,
 				},
 				rl.BLACK,
 			)
 		}
-		if has_circle && has_node && has_position {
-			draw_circle(circle, pos)
+		if id in radiuses && id in positions {
+			if id in colors {
+				rl.DrawCircleV(positions[id], radiuses[id], colors[id])
+			} else {
+				rl.DrawCircleLinesV(positions[id], radiuses[id], rl.GREEN)
+			}
 		}
 
-		if has_node && has_connection && has_position && has_circle {
-			for con in connection {
-				pos2 := positions[con.link_to].?
-				circle2 := circles[con.link_to].?
+		if id in nodes &&
+		   id in connections &&
+		   id in positions &&
+		   id in radiuses {
+			for connection in connections[id] {
 				draw_links_node(
-					pos,
-					pos2,
-					circle.radius,
-					circle2.radius,
-					con.letter,
+					positions[id],
+					positions[connection.link_to],
+					radiuses[id],
+					radiuses[connection.link_to],
+					connection.letter,
 				)
 			}
 		}
-		if has_boss && has_position {
+		if id in bosses && id in positions {
+			pos := positions[id]
 			rl.DrawTriangle(
-				pos.pos + {+20, +00},
-				pos.pos + {-10, -15},
-				pos.pos + {-10, 15},
+				pos + {+20, +00},
+				pos + {-10, -15},
+				pos + {-10, 15},
 				rl.RED,
 			)
 			rl.DrawTriangle(
-				pos.pos + {-20, +00},
-				pos.pos + {+10, +15},
-				pos.pos + {+10, -15},
+				pos + {-20, +00},
+				pos + {+10, +15},
+				pos + {+10, -15},
 				rl.RED,
 			)
 		}
-		if has_player && has_position {
+		if id in players && id in positions {
+			pos := positions[id]
 			rl.DrawTriangle(
-				pos.pos + {10, 0},
-				pos.pos + {-10, -10},
-				pos.pos + {-10, 10},
+				pos + {10, 0},
+				pos + {-10, -10},
+				pos + {-10, 10},
 				rl.BLUE,
 			)
 		}
 	}
-}
-
-draw_circle :: proc(circle: CircleComponent, pos: PositionComponent) {
-	rl.DrawCircleLinesV(pos, circle.radius, rl.GREEN)
 }

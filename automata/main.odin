@@ -89,26 +89,31 @@ main :: proc() {
 
 	// INITIAL NODE
 	begin_node := new_entity()
-	set_component(begin_node, NodeComponent{})
-	set_component(begin_node, position({0, 0}))
-	set_component(begin_node, CircleComponent{50})
-	fmt.println("begin node:", begin_node)
+	ecs.nodes[begin_node] = NodeComponent{}
+	ecs.positions[begin_node] = PositionComponent{0, 0}
+	ecs.radiuses[begin_node] = 50
 
 	// PLAYER
 	player := new_entity()
-	set_component(player, PlayerComponent{begin_node})
-	set_component(player, HealthComponent{90, 100})
-	set_component(player, position(ecs.positions[begin_node].?))
+	ecs.players[player] = PlayerComponent{begin_node}
+	ecs.healths[player] = HealthComponent{90, 100}
+	ecs.positions[player] = ecs.positions[begin_node]
 
 	out: []EntityHandle = load_level_0(begin_node)
 	load_level_1(out[0])
 
 	init_game()
 
-
 	for !rl.WindowShouldClose() {
+		// UPDATE
+		//--------
 		dt = rl.GetFrameTime()
+		system_update()
+		camera_controls_update()
+		camera_focus_player(player)
 
+		// DRAW
+		//------
 		rl.BeginDrawing()
 		rl.BeginMode2D(camera)
 
@@ -117,10 +122,15 @@ main :: proc() {
 		system_draw()
 
 		rl.EndMode2D()
-		rl.EndDrawing()
 
-		system_update()
-		camera_update()
+		// STATIC DRAWING
+		controls_info_draw()
+		when ODIN_DEBUG {performance_info_draw()}
+
+		when ODIN_DEBUG {ecs_debug_draw()}
+
+		rl.EndDrawing()
 	}
+
 	rl.CloseWindow()
 }

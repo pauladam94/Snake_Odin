@@ -4,22 +4,19 @@ import "core:fmt"
 import "core:math"
 import rl "vendor:raylib"
 
-position :: proc(pos: Vec2) -> PositionComponent {
-	return PositionComponent{pos, {0, 0}, pos, 1, false}
+timer_update :: proc(id: EntityHandle) {
+	timer := &ecs.timers[id]
+	if timer.t >= 1 {
+		delete_entity(id)
+		// delete_key(&ecs.timers, id)
+	} else {
+		timer.t += dt / timer.duration
+	}
 }
 
-position_update :: proc(pos: ^PositionComponent) {
-	if pos.transition == 1 {
-		pos.pos = pos.end
-	}
-	if pos.in_transition {
-		if pos.transition >= 1 {
-			pos.in_transition = false
-			pos.transition = 1
-		} else {
-			pos.transition += dt / transition_duration
-			t := pos.transition
-			pos.pos = pos.begin * (1 - t) + pos.end * t
-		}
-	}
+update_position_in_transition :: proc(
+	pos: ^PositionComponent,
+	t: ^TransitionComponent,
+) {
+
 }

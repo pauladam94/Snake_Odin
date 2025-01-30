@@ -6,8 +6,9 @@ import rl "vendor:raylib"
 eps: f32 = 0.001
 
 // WINDOW
-width :: 1000
-height :: 1000
+target_fps: i32 : 60
+width :: 1500
+height :: 1300
 font_size :: 40
 
 // DELTA TIME
@@ -35,3 +36,10 @@ levels_bound: []BoundComponent = {
 health_bar_width: f32 : 40
 radius_base: f32 : 30
 spacing_base: f32 : 400
+
+// FINAL WORD
+word: string
+
+// DEBUG
+debug: bool
+show_id: EntityHandle = 0

@@ -44,8 +44,8 @@ world_pos :: proc(i, j, w, h: f64, min, max: [2]f64) -> complex128 {
 }
 
 main :: proc() {
-	w: f64 : 500
-	h: f64 : 500
+	w: f64 : 1000
+	h: f64 : 1000
 	min: [2]f64 = {-2, -2}
 	max: [2]f64 = {2, 2}
 	prec: f64 : 400
@@ -58,19 +58,25 @@ main :: proc() {
 		for i in 0 ..= w {
 			for j in 0 ..= h {
 				if mandelbrot(world_pos(i, j, w, h, min, max), 100) {
-					rl.DrawRectangleRec({f32(i), f32(j), 1, 1}, rl.BLACK)
+					rl.DrawPixel(i32(i), i32(j), rl.BLACK)
 				}
 			}
 		}
 		rl.EndDrawing()
 
 		if rl.IsKeyDown(rl.KeyboardKey.UP) {
-			pos: [2]f64 =
-				{f64(rl.GetMousePosition().x), f64(rl.GetMousePosition().y)} /
-				w
-
-			min += normalize(pos - min) * delta
-			max += normalize(pos - max) * delta
+			pos: complex128 = world_pos(
+				f64(rl.GetMousePosition().x),
+				f64(rl.GetMousePosition().y),
+				w,
+				h,
+				min,
+				max,
+			)
+			p: [2]f64 = {real(pos), imag(pos)}
+			t := 0.1
+			min = p * t + min * (1 - t)
+			max = p * t + max * (1 - t)
 		}
 	}
 	rl.CloseWindow()

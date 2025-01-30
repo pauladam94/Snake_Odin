@@ -1,19 +1,31 @@
 package main
 
 import "core:fmt"
-import "core:reflect"
+import "core:strings"
+import rl "vendor:raylib"
 
 EntityHandle :: int
 
 Components :: struct {
-	connections: [dynamic]Maybe(ConnectionComponent),
-	nodes:       [dynamic]Maybe(NodeComponent),
-	positions:   [dynamic]Maybe(PositionComponent),
-	circles:     [dynamic]Maybe(CircleComponent),
-	healths:     [dynamic]Maybe(HealthComponent),
-	players:     [dynamic]Maybe(PlayerComponent),
-	bosses:      [dynamic]Maybe(BossComponent),
-	bounds:      [dynamic]Maybe(BoundComponent),
+	// linkto:      [dynamic]Maybe(LinkTo),
+	bosses:          map[EntityHandle](BossComponent),
+	bounds:          map[EntityHandle](BoundComponent),
+	connections:     map[EntityHandle](ConnectionComponent),
+	colors:          map[EntityHandle](ColorFillComponent),
+
+	// TRY
+	new_connections: map[EntityHandle](NewConnectionComponent),
+	// TRY
+	healths:         map[EntityHandle](HealthComponent),
+	hovers:          map[EntityHandle](HoverComponent),
+	nodes:           map[EntityHandle](NodeComponent),
+	particules:      map[EntityHandle](ParticleComponent),
+	players:         map[EntityHandle](PlayerComponent),
+	positions:       map[EntityHandle](PositionComponent),
+	radiuses:        map[EntityHandle](RadiusComponent),
+	shakers:         map[EntityHandle](ShakerComponent),
+	transitions:     map[EntityHandle](TransitionComponent),
+	timers:          map[EntityHandle](TimerComponent),
 }
 ECS :: struct {
 	using components: Components,
@@ -38,14 +50,6 @@ new_id :: proc() -> EntityHandle {
 		}
 	}
 
-	append(&connections, nil)
-	append(&nodes, nil)
-	append(&positions, nil)
-	append(&circles, nil)
-	append(&healths, nil)
-	append(&players, nil)
-	append(&bounds, nil)
-	append(&bosses, nil)
 	return len(entities)
 }
 
@@ -55,31 +59,76 @@ new_entity :: proc() -> (id: EntityHandle) {
 	return
 }
 
-set_component :: proc {
-	set_connection_component,
-	set_node_component,
-	set_position_component,
-	set_circle_component,
-	set_player_component,
-	set_bound_component,
-	set_boss_component,
-	set_health_component,
+delete_entity :: proc(id: EntityHandle) {
+	using ecs
+
+	delete_key(&bosses, id)
+	delete_key(&bounds, id)
+	delete_key(&connections, id)
+	delete_key(&colors, id)
+	delete_key(&healths, id)
+	delete_key(&hovers, id)
+	delete_key(&nodes, id)
+	delete_key(&players, id)
+	delete_key(&positions, id)
+	delete_key(&particules, id)
+	delete_key(&radiuses, id)
+	delete_key(&shakers, id)
+	delete_key(&transitions, id)
+	delete_key(&timers, id)
+
+	for handle, i in entities {
+		if id == handle {
+			unordered_remove(&entities, i)
+		}
+	}
 }
 
 delete_ecs :: proc() {
 	using ecs
-	for maybe_con in connections {
-		if c, ok := maybe_con.?; ok {
-			delete(c)
-		}
+	for id in connections {
+		delete(connections[id])
 	}
-	delete(connections)
-	delete(nodes)
-	delete(positions)
-	delete(entities)
-	delete(bounds)
-	delete(circles)
-	delete(players)
-	delete(healths)
+
 	delete(bosses)
+	delete(bounds)
+	delete(connections)
+	delete(colors)
+	delete(healths)
+	delete(hovers)
+	delete(nodes)
+	delete(players)
+	delete(positions)
+	delete(particules)
+	delete(radiuses)
+	delete(shakers)
+	delete(transitions)
+	delete(timers)
+
+	delete(entities)
+}
+
+
+ecs_debug_draw :: proc() {
+	using ecs
+
+	if rl.IsKeyPressed(.UP) do show_id += 1
+	if rl.IsKeyPressed(.DOWN) do show_id -= 1
+
+	show_id_exists: bool
+	for id in entities {
+		if id == show_id do show_id_exists = true
+	}
+	if !show_id_exists do return
+
+
+	for id, i in entities {
+		// fmt.string
+
+		DrawTxt(
+			fmt.aprintf("hey{}", ecs.transitions),
+			{width - 200, f32(i) * 30},
+		)
+
+	}
 }
