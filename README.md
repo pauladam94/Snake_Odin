@@ -80,11 +80,13 @@ automates.
 
 # TODO
 
-- [ ] basic projectile
+- [ ] settings pour quitter le jeu / changer les touches
+- [ ] mort quand joueur et boss sur même case
+- [ ] Séparation par niveau (des boss aussi) - boss va que dans 1 niveau
+- [ ] Robot qui fait une attaque régulière
+- [ ] affichage de fin de partie quand les boss sont morts
 - [ ] red node (with movement) when picking the wrong transition
 - [ ] Automata editor
-- [ ] Boss
-  - [ ] boos qui bouge débilement
 
 - [ ] Art style
   - [ ] player custom style (very basic shapes)

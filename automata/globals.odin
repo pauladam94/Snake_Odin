@@ -7,8 +7,8 @@ eps: f32 = 0.001
 
 // WINDOW
 target_fps: i32 : 60
-width :: 1500
-height :: 1300
+width :: 1000
+height :: 1000
 font_size :: 40
 
 // DELTA TIME
@@ -25,6 +25,7 @@ text_spacing :: font_size / 2
 
 // ECS
 ecs: ECS
+static_id: EntityHandle
 
 // LEVELS
 levels_bound: []BoundComponent = {

@@ -74,15 +74,14 @@ load_level_1 :: proc(node_entry: EntityHandle) {
 	for i in 0 ..= 4 {
 		handle := new_entity()
 		append(&ids, handle)
-		nodes[handle] = NodeComponent{}
 
+		nodes[handle] = NodeComponent{}
 		positions[handle] =
 			{
 				f32(i % 2) * spacing_base + radius_base,
 				f32(i / 2) * spacing_base + radius_base,
 			} +
 			levels_bound[level_id].min
-
 		bounds[handle] = levels_bound[level_id]
 		radiuses[handle] = radius_base
 	}

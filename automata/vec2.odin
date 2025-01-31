@@ -14,4 +14,3 @@ normalize :: proc(v: Vec2) -> Vec2 {
 orthogonal :: proc(v: Vec2) -> Vec2 {
 	return normalize(Vec2{-v.y, v.x})
 }
-

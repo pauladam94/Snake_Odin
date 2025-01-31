@@ -21,12 +21,16 @@ system_update :: proc() {
 		// Delete entity with health less that 0
 		if id in healths {
 			if healths[id].value <= 0 {
+				fmt.println("No more health")
 				delete_entity(id)
 			}
 		}
 
 		// Particule with no more transition should be deleted
-		if id in particules && id not_in transitions do delete_entity(id)
+		if id in particules && id not_in transitions {
+			fmt.println("Delete Particule")
+			delete_entity(id)
+		}
 
 		// Transition with no more timer should be deleted
 		if id in transitions && transitions[id].timer not_in timers {
@@ -60,7 +64,6 @@ system_update :: proc() {
 			positions[id] = positions[players[id].at]
 		}
 		if id in players && id in positions && id not_in transitions {
-			pos := &positions[id]
 			for key in all_keys {
 				if rl.IsKeyPressed(key) {
 					current_node := players[id].at
@@ -78,7 +81,6 @@ system_update :: proc() {
 							timer = transi_timer,
 						}
 						timers[transi_timer] = TimerComponent {
-							t        = 0,
 							duration = 1,
 						}
 
@@ -163,12 +165,49 @@ system_update :: proc() {
 			delete_key(&shakers, id)
 		}
 
-		// Check for hover of an element 
+		// Check for hover of an element
 		if id in radiuses && id in positions {
-			if length(rl.GetMousePosition() - positions[id]) < radiuses[id] {
+			fmt.println(rl.GetScreenToWorld2D(rl.GetMousePosition(), camera))
+			if length(
+				   rl.GetScreenToWorld2D(rl.GetMousePosition(), camera) -
+				   positions[id],
+			   ) <
+			   radiuses[id] {
 				hovers[id] = HoverComponent{}
 			} else {
 				delete_key(&hovers, id)
+			}
+		}
+
+		if id in random_moves && random_moves[id].timer not_in timers {
+			delete_key(&random_moves, id)
+		}
+
+		if id in bosses && id not_in random_moves {
+			// Boss do a random moove
+			current_node := bosses[id].at
+			next_node := rand.choice(connections[current_node][:]).link_to
+
+			fmt.println("Boss MOVE :", current_node, "-", next_node)
+			// Timer before next move
+			random_move_timer := new_entity()
+			timers[random_move_timer] = TimerComponent {
+				duration = 5,
+			}
+			random_moves[id] = RandomMoveComponent {
+				timer = random_move_timer,
+			}
+
+			// Transition for next position
+			bosses[id] = BossComponent{next_node}
+			transi_timer := new_entity()
+			timers[transi_timer] = TimerComponent {
+				duration = 3,
+			}
+			transitions[id] = TransitionComponent {
+				begin = current_node,
+				end   = next_node,
+				timer = transi_timer,
 			}
 		}
 	}
@@ -176,7 +215,6 @@ system_update :: proc() {
 system_draw :: proc() {
 	using ecs
 	for id in entities {
-
 		if id in healths && id in positions {
 			pos := positions[id]
 			health := healths[id]
@@ -201,13 +239,10 @@ system_draw :: proc() {
 			)
 		}
 		if id in radiuses && id in positions {
-			if id in colors {
-				rl.DrawCircleV(positions[id], radiuses[id], colors[id])
-			} else {
-				rl.DrawCircleLinesV(positions[id], radiuses[id], rl.GREEN)
-			}
+			r := radiuses[id] + 10 if id in hovers else 0
+			// color := colors[id] if id in colors else rl.GREEN
+			rl.DrawCircleLinesV(positions[id], r, rl.GREEN)
 		}
-
 		if id in nodes &&
 		   id in connections &&
 		   id in positions &&

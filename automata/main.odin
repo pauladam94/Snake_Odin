@@ -126,7 +126,6 @@ main :: proc() {
 		// STATIC DRAWING
 		controls_info_draw()
 		when ODIN_DEBUG {performance_info_draw()}
-
 		when ODIN_DEBUG {ecs_debug_draw()}
 
 		rl.EndDrawing()

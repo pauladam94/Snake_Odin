@@ -9,6 +9,9 @@ HealthComponent :: struct {
 	value: f32,
 	max:   f32,
 }
+RandomMoveComponent :: struct {
+	timer: EntityHandle,
+}
 // Entity that are linked to another entity (position)
 FixedAtComponent :: struct {}
 // Entity that is a boss
@@ -47,6 +50,7 @@ TimerComponent :: struct {
 	t:        f32, // between 0 and 1
 	duration: f32,
 }
+TimerFinishedComponent :: struct {}
 ParticleComponent :: struct {}
 BoundComponent :: struct {
 	min: Vec2,

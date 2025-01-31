@@ -23,9 +23,11 @@ Components :: struct {
 	players:         map[EntityHandle](PlayerComponent),
 	positions:       map[EntityHandle](PositionComponent),
 	radiuses:        map[EntityHandle](RadiusComponent),
+	random_moves:    map[EntityHandle](RandomMoveComponent),
 	shakers:         map[EntityHandle](ShakerComponent),
 	transitions:     map[EntityHandle](TransitionComponent),
 	timers:          map[EntityHandle](TimerComponent),
+	timers_finished: map[EntityHandle](TimerFinishedComponent),
 }
 ECS :: struct {
 	using components: Components,
@@ -33,24 +35,10 @@ ECS :: struct {
 	entities:         [dynamic]EntityHandle,
 }
 
-new_id :: proc() -> EntityHandle {
-	using ecs
-	present: [dynamic]bool
-	defer delete(present)
-
-	for id in entities {
-		if id < len(entities) {
-			assign_at(&present, id, true)
-		}
-	}
-
-	for is_here, i in present {
-		if !is_here {
-			return i
-		}
-	}
-
-	return len(entities)
+new_id :: proc() -> (new_id: EntityHandle) {
+	new_id = static_id
+	static_id += 1
+	return
 }
 
 new_entity :: proc() -> (id: EntityHandle) {
@@ -73,6 +61,7 @@ delete_entity :: proc(id: EntityHandle) {
 	delete_key(&positions, id)
 	delete_key(&particules, id)
 	delete_key(&radiuses, id)
+	delete_key(&random_moves, id)
 	delete_key(&shakers, id)
 	delete_key(&transitions, id)
 	delete_key(&timers, id)
@@ -82,6 +71,7 @@ delete_entity :: proc(id: EntityHandle) {
 			unordered_remove(&entities, i)
 		}
 	}
+	fmt.println("Deleted Entity: ", id)
 }
 
 delete_ecs :: proc() {
@@ -101,13 +91,13 @@ delete_ecs :: proc() {
 	delete(positions)
 	delete(particules)
 	delete(radiuses)
+	delete(random_moves)
 	delete(shakers)
 	delete(transitions)
 	delete(timers)
 
 	delete(entities)
 }
-
 
 ecs_debug_draw :: proc() {
 	using ecs
@@ -119,16 +109,26 @@ ecs_debug_draw :: proc() {
 	for id in entities {
 		if id == show_id do show_id_exists = true
 	}
+	DrawTxt(fmt.aprintf("{}", entities), {width / 2, 0})
+
+	x: f32 = width - 300
+	spacing: f32 = 20
+	DrawTxt(fmt.aprintf("Id: {}", show_id), {x, spacing * 1})
 	if !show_id_exists do return
-
-
-	for id, i in entities {
-		// fmt.string
-
-		DrawTxt(
-			fmt.aprintf("hey{}", ecs.transitions),
-			{width - 200, f32(i) * 30},
-		)
-
+	if show_id in bosses {
+		DrawTxt(fmt.aprintf("Boss: {}", bosses[show_id].at), {x, spacing * 2})
 	}
+	if show_id in hovers {
+		DrawTxt(fmt.aprintf("Hovers: {}", hovers[show_id]), {x, spacing * 3})
+	}
+	DrawTxt(
+		fmt.aprintf(
+			"begin:{} end:{}",
+			transitions[show_id].begin,
+			transitions[show_id].end,
+		),
+		{x, spacing * 4},
+	)
+
+	DrawTxt(fmt.aprintf("Timer: {}", timers[show_id].t), {x, spacing * 5})
 }
